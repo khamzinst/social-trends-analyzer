@@ -10,6 +10,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/sources': 'Источники данных',
   '/import': 'Импорт данных',
   '/trends': 'Анализ трендов',
+  '/youtube': 'YouTube Тренды',
   '/forecasts': 'Прогнозирование',
   '/reports': 'Отчёты',
   '/profile': 'Профиль',

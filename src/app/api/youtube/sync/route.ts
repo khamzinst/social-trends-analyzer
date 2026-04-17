@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { fetchYouTubeTrending, YOUTUBE_CATEGORIES } from '@/lib/youtube'
+import { fetchYouTubeTrending } from '@/lib/youtube'
 import { getAuthUser } from '@/lib/auth'
 
 export async function POST() {
@@ -10,49 +10,33 @@ export async function POST() {
   try {
     const videos = await fetchYouTubeTrending('KZ', 25)
 
-    // Group by category to build trends
-    const categoryMap = new Map<string, { views: number; likes: number; comments: number; count: number; titles: string[] }>()
+    const saved = []
 
     for (const video of videos) {
-      const cat = video.categoryId || '24'
-      const existing = categoryMap.get(cat) ?? { views: 0, likes: 0, comments: 0, count: 0, titles: [] }
-      categoryMap.set(cat, {
-        views: existing.views + video.viewCount,
-        likes: existing.likes + video.likeCount,
-        comments: existing.comments + video.commentCount,
-        count: existing.count + 1,
-        titles: [...existing.titles, video.title],
-      })
-    }
-
-    const savedTrends = []
-
-    for (const [categoryId, stats] of Array.from(categoryMap.entries())) {
-      const categoryName = YOUTUBE_CATEGORIES[categoryId] ?? 'Развлечения'
-      const avgViews = Math.round(stats.views / stats.count)
-      const engagementRate = stats.views > 0
-        ? ((stats.likes + stats.comments) / stats.views) * 100
+      const engagementRate = video.viewCount > 0
+        ? ((video.likeCount + video.commentCount) / video.viewCount) * 100
         : 0
+      const growthRate = Math.min(150, Math.round(engagementRate * 8))
+      const sentiment = Math.min(0.98, 0.5 + engagementRate / 15)
 
-      // Growth rate based on likes/views ratio (higher = more engaging = trending)
-      const growthRate = Math.min(150, Math.round(engagementRate * 10))
-
-      // Sentiment: likes ratio (no dislikes available since YouTube hid them)
-      const sentiment = Math.min(0.99, 0.5 + engagementRate / 20)
+      // Store channel as extra info in keyword field
+      const keyword = video.title.length > 60
+        ? video.title.slice(0, 57) + '...'
+        : video.title
 
       const trend = await prisma.trend.upsert({
-        where: { id: `yt-${categoryId}` },
+        where: { id: `yt-video-${video.id}` },
         update: {
-          mentionsCount: stats.views,
+          mentionsCount: video.viewCount,
           growthRate,
           sentiment,
           updatedAt: new Date(),
         },
         create: {
-          id: `yt-${categoryId}`,
-          keyword: `#${categoryName.replace(/ /g, '')}`,
+          id: `yt-video-${video.id}`,
+          keyword,
           platform: 'YOUTUBE',
-          mentionsCount: stats.views,
+          mentionsCount: video.viewCount,
           growthRate,
           sentiment,
           isActive: true,
@@ -60,15 +44,10 @@ export async function POST() {
         },
       })
 
-      savedTrends.push(trend)
+      saved.push({ ...trend, channelTitle: video.channelTitle, likeCount: video.likeCount, commentCount: video.commentCount })
     }
 
-    return NextResponse.json({
-      success: true,
-      synced: savedTrends.length,
-      totalVideos: videos.length,
-      trends: savedTrends,
-    })
+    return NextResponse.json({ success: true, synced: saved.length, totalVideos: videos.length, trends: saved })
   } catch (error: any) {
     console.error('YouTube sync error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })

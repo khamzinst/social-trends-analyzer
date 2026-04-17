@@ -86,8 +86,12 @@ const platformLabels: Record<string, string> = {
 
 interface Props { initialReports: Report[] }
 
-const DEFAULT_REPORT_CONTENT = (report: Report) => `
-# ${report.title}
+const DEFAULT_REPORT_CONTENT = (report: Report, allTrends = MOCK_TRENDS) => {
+  const trends = report.platform
+    ? allTrends.filter((t) => t.platform === report.platform)
+    : allTrends
+  const top = trends.slice(0, 5)
+  return `# ${report.title}
 
 **Дата создания:** ${formatDateTime(report.createdAt)}
 **Платформа:** ${report.platform ? platformLabels[report.platform] : 'Все платформы'}
@@ -101,20 +105,24 @@ const DEFAULT_REPORT_CONTENT = (report: Report) => `
 - Выявлено трендов: **${report.trendsFound}**
 - Период анализа: последние 30 дней
 
-## Топ-5 трендов периода
+## Топ трендов платформы
 
-${MOCK_TRENDS.slice(0, 5).map((t, i) =>
-  `${i + 1}. **${t.keyword}** — ${t.mentionsCount.toLocaleString('ru-RU')} упоминаний, рост ${t.growthRate >= 0 ? '+' : ''}${t.growthRate.toFixed(1)}%`
-).join('\n')}
+${top.length > 0
+  ? top.map((t, i) =>
+      `${i + 1}. **${t.keyword}** — ${t.mentionsCount.toLocaleString('ru-RU')} упоминаний, рост ${t.growthRate >= 0 ? '+' : ''}${t.growthRate.toFixed(1)}%`
+    ).join('\n')
+  : 'Данные по выбранной платформе не найдены.'
+}
 
 ## Выводы
 
-Анализ показывает устойчивый рост интереса к тематике здорового образа жизни и технологий.
+Анализ показывает ${top.length > 0 && top[0].growthRate > 20 ? 'активный рост' : 'стабильную активность'} по платформе ${report.platform ? platformLabels[report.platform] : 'всех платформ'}.
 Рекомендуется усилить мониторинг сегментов с высоким ростом для своевременного реагирования.
 
 ---
 *Отчёт сгенерирован автоматически системой TrendScope*
 `
+}
 
 export function ReportsPage({ initialReports }: Props) {
   const [reports, setReports] = useState<Report[]>(
@@ -123,6 +131,20 @@ export function ReportsPage({ initialReports }: Props) {
   const [open, setOpen] = useState(false)
   const [viewReport, setViewReport] = useState<Report | null>(null)
   const [loading, setLoading] = useState(false)
+  const [dbTrends, setDbTrends] = useState(MOCK_TRENDS)
+
+  useState(() => {
+    fetch('/api/trends').then(r => r.json()).then(data => {
+      if (data.trends?.length > 0) {
+        const real = data.trends.map((t: any) => ({
+          id: t.id, keyword: t.keyword, platform: t.platform,
+          mentionsCount: t.mentionsCount, growthRate: t.growthRate ?? 0,
+          sentiment: t.sentiment ?? 0.5, status: 'STABLE', hashtags: [], avgEngagement: 0, timeSeries: [],
+        }))
+        setDbTrends([...real, ...MOCK_TRENDS])
+      }
+    }).catch(() => {})
+  })
   const [form, setForm] = useState({ title: '', platform: 'none', period: '30' })
   const { toast } = useToast()
 
@@ -155,7 +177,7 @@ export function ReportsPage({ initialReports }: Props) {
 
       setReports([newReport, ...reports])
       setOpen(false)
-      setForm({ title: '', platform: '', period: '30' })
+      setForm({ title: '', platform: 'none', period: '30' })
       toast({ title: 'Отчёт создан', variant: 'success' })
     } catch {
       toast({ title: 'Ошибка', variant: 'destructive' })
@@ -331,7 +353,7 @@ export function ReportsPage({ initialReports }: Props) {
           {viewReport && (
             <div className="prose prose-sm max-w-none">
               <pre className="whitespace-pre-wrap text-sm font-sans text-foreground bg-muted/30 p-4 rounded-lg">
-                {DEFAULT_REPORT_CONTENT(viewReport).trim()}
+                {DEFAULT_REPORT_CONTENT(viewReport, dbTrends).trim()}
               </pre>
             </div>
           )}

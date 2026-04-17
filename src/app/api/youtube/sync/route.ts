@@ -27,7 +27,7 @@ export async function POST() {
 
     const savedTrends = []
 
-    for (const [categoryId, stats] of categoryMap.entries()) {
+    for (const [categoryId, stats] of Array.from(categoryMap.entries())) {
       const categoryName = YOUTUBE_CATEGORIES[categoryId] ?? 'Развлечения'
       const avgViews = Math.round(stats.views / stats.count)
       const engagementRate = stats.views > 0

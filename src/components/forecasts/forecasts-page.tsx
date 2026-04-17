@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
-import { TrendingUp, TrendingDown, Zap, Brain, BarChart2 } from 'lucide-react'
-import { MOCK_TRENDS, generateForecast, getPlatformLabel, type ForecastModel } from '@/lib/mock-data'
+import { TrendingUp, TrendingDown, Zap, Brain, BarChart2, Youtube } from 'lucide-react'
+import { MOCK_TRENDS, generateForecast, getPlatformLabel, generateTimeSeries, type ForecastModel, type TrendData } from '@/lib/mock-data'
 import { formatNumber, formatPercent } from '@/lib/utils'
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -47,10 +47,44 @@ const MODEL_INFO = {
   },
 }
 
+function dbTrendToTrendData(t: any): TrendData {
+  const growth = t.growthRate ?? 0
+  const status = growth > 30 ? 'RISING' : growth > 5 ? 'STABLE' : growth < 0 ? 'FALLING' : 'EMERGING'
+  return {
+    id: t.id,
+    keyword: t.keyword,
+    platform: t.platform as any,
+    mentionsCount: t.mentionsCount,
+    growthRate: growth,
+    sentiment: t.sentiment ?? 0.5,
+    status,
+    hashtags: [t.keyword],
+    avgEngagement: 0,
+    timeSeries: generateTimeSeries(30, Math.round(t.mentionsCount * 0.7), growth),
+  }
+}
+
 export function ForecastsPage() {
-  const [selectedTrend, setSelectedTrend] = useState(MOCK_TRENDS[0])
+  const [allTrends, setAllTrends] = useState<TrendData[]>(MOCK_TRENDS)
+  const [selectedTrend, setSelectedTrend] = useState<TrendData>(MOCK_TRENDS[0])
   const [horizon, setHorizon] = useState('7')
   const [model, setModel] = useState<ForecastModel>('arima')
+
+  useEffect(() => {
+    fetch('/api/trends')
+      .then((r) => r.json())
+      .then((data) => {
+        const ytTrends = (data.trends ?? [])
+          .filter((t: any) => t.platform === 'YOUTUBE')
+          .map(dbTrendToTrendData)
+        if (ytTrends.length > 0) {
+          const merged = [...ytTrends, ...MOCK_TRENDS.filter((t) => t.platform !== 'YOUTUBE')]
+          setAllTrends(merged)
+          setSelectedTrend(ytTrends[0])
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const forecastData = generateForecast(selectedTrend, parseInt(horizon), model)
   const chartData = forecastData.map((p) => ({
@@ -77,14 +111,14 @@ export function ForecastsPage() {
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[200px] space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">ТРЕНД</label>
-              <Select value={selectedTrend.id} onValueChange={(id) => setSelectedTrend(MOCK_TRENDS.find((t) => t.id === id)!)}>
+              <Select value={selectedTrend.id} onValueChange={(id) => setSelectedTrend(allTrends.find((t) => t.id === id)!)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {MOCK_TRENDS.map((t) => (
+                  {allTrends.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
-                      {t.keyword} — {getPlatformLabel(t.platform)}
+                      {t.platform === 'YOUTUBE' ? '▶ ' : ''}{t.keyword.slice(0, 40)} — {getPlatformLabel(t.platform)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -238,7 +272,7 @@ export function ForecastsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {MOCK_TRENDS.map((trend) => {
+            {allTrends.map((trend) => {
               const fc = generateForecast(trend, parseInt(horizon))
               const last = trend.timeSeries[trend.timeSeries.length - 1].value
               const pred = fc[fc.length - 1].predicted

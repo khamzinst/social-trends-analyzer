@@ -42,7 +42,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <p className="text-sidebar-foreground/40 text-sm">
-          © 2024 TrendScope. Дипломный проект.
+          © 2026 TrendScope. Дипломный проект.
         </p>
       </div>
 

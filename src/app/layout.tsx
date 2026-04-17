@@ -4,6 +4,9 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'TrendScope — Анализ трендов социальных сетей',
   description: 'Информационная система анализа и прогнозирования трендов социальных сетей',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

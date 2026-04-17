@@ -45,7 +45,7 @@ export default function LoginPage() {
   }
 
   const fillDemo = () => {
-    setForm({ email: 'admin@demo.ru', password: 'Demo1234' })
+    setForm({ email: 'admin@demo.kz', password: 'Demo1234' })
   }
 
   return (

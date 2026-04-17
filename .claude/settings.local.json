@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\PostgreSQL\\\\16\\\\bin;\" + $env:PATH; pg_ctl status -D \"C:\\\\Program Files\\\\PostgreSQL\\\\16\\\\data\" 2>&1)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\PostgreSQL\\\\16\\\\bin;\" + $env:PATH; pg_ctl start -D \"C:\\\\Program Files\\\\PostgreSQL\\\\16\\\\data\" -l \"C:\\\\Program Files\\\\PostgreSQL\\\\16\\\\data\\\\pg.log\" 2>&1)"
+    ]
+  }
+}

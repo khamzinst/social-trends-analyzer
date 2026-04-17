@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Пользователи системы
+// ─────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  // role: USER | ADMIN
+  role      String   @default("USER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dataSources      DataSource[]
+  analysisReports  AnalysisReport[]
+  importedDatasets ImportedDataset[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+// Источники данных (платформы социальных сетей)
+// ─────────────────────────────────────────────
+model DataSource {
+  id        String  @id @default(cuid())
+  name      String
+  // platform: INSTAGRAM | TIKTOK | TWITTER | VKONTAKTE | YOUTUBE | OTHER
+  platform  String
+  url       String?
+  isActive  Boolean  @default(true)
+  // config stored as JSON string
+  config    String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  importedDatasets ImportedDataset[]
+
+  @@index([userId])
+  @@map("data_sources")
+}
+
+// ─────────────────────────────────────────────
+// Импортированные наборы данных
+// ─────────────────────────────────────────────
+model ImportedDataset {
+  id           String    @id @default(cuid())
+  name         String
+  recordCount  Int       @default(0)
+  // status: PENDING | PROCESSING | COMPLETED | FAILED
+  status       String    @default("PENDING")
+  // platform: INSTAGRAM | TIKTOK | TWITTER | VKONTAKTE | YOUTUBE | OTHER
+  platform     String
+  dateFrom     DateTime?
+  dateTo       DateTime?
+  dataSourceId String?
+  dataSource   DataSource? @relation(fields: [dataSourceId], references: [id], onDelete: SetNull)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  analysisReports AnalysisReport[]
+  trends          Trend[]
+
+  @@index([userId])
+  @@index([dataSourceId])
+  @@index([status])
+  @@map("imported_datasets")
+}
+
+// ─────────────────────────────────────────────
+// Тренды, выявленные из данных
+// ─────────────────────────────────────────────
+model Trend {
+  id            String   @id @default(cuid())
+  keyword       String
+  // platform: INSTAGRAM | TIKTOK | TWITTER | VKONTAKTE | YOUTUBE | OTHER
+  platform      String
+  mentionsCount Int      @default(0)
+  growthRate    Float    @default(0)
+  sentiment     Float?
+  isActive      Boolean  @default(true)
+  detectedAt    DateTime @default(now())
+  datasetId     String?
+  dataset       ImportedDataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([keyword])
+  @@index([platform])
+  @@index([datasetId])
+  @@index([isActive])
+  @@map("trends")
+}
+
+// ─────────────────────────────────────────────
+// Отчёты анализа
+// ─────────────────────────────────────────────
+model AnalysisReport {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  // status: DRAFT | PROCESSING | COMPLETED | FAILED
+  status       String    @default("DRAFT")
+  // platform: INSTAGRAM | TIKTOK | TWITTER | VKONTAKTE | YOUTUBE | OTHER | null
+  platform     String?
+  recordsCount Int       @default(0)
+  trendsFound  Int       @default(0)
+  datasetId    String?
+  dataset      ImportedDataset? @relation(fields: [datasetId], references: [id], onDelete: SetNull)
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([datasetId])
+  @@index([status])
+  @@map("analysis_reports")
+}

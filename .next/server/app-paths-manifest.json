@@ -1,0 +1,10 @@
+{
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/profile/page": "app/(dashboard)/profile/page.js",
+  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js",
+  "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(dashboard)/import/page": "app/(dashboard)/import/page.js",
+  "/(dashboard)/sources/page": "app/(dashboard)/sources/page.js",
+  "/(dashboard)/trends/page": "app/(dashboard)/trends/page.js"
+}

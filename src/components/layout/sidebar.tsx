@@ -16,6 +16,7 @@ import {
   ChevronRight,
   X,
   Youtube,
+  Newspaper,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -45,6 +46,11 @@ const navItems = [
     title: 'YouTube Тренды',
     href: '/youtube',
     icon: Youtube,
+  },
+  {
+    title: 'Новости',
+    href: '/news',
+    icon: Newspaper,
   },
   {
     title: 'Прогнозирование',

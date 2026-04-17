@@ -30,7 +30,7 @@ export interface ForecastPoint {
 }
 
 // Generate smooth time series with trend
-function generateTimeSeries(
+export function generateTimeSeries(
   days: number,
   baseValue: number,
   trend: number,

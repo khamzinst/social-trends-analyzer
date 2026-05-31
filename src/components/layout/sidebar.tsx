@@ -17,6 +17,7 @@ import {
   X,
   Youtube,
   Newspaper,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
@@ -51,6 +52,11 @@ const navItems = [
     title: 'Новости',
     href: '/news',
     icon: Newspaper,
+  },
+  {
+    title: 'AI Аналитик',
+    href: '/ai-analyst',
+    icon: Sparkles,
   },
   {
     title: 'Прогнозирование',

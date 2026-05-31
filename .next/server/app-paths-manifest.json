@@ -1,7 +1,0 @@
-{
-  "/(dashboard)/import/page": "app/(dashboard)/import/page.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/trends/page": "app/(dashboard)/trends/page.js",
-  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js"
-}
